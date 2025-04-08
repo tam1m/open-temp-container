@@ -99,7 +99,7 @@ async function setToStorage(id, value) {
 }
 
 browser.menus.create({
-  title: "Open in Ephemeral Container(s)",
+  title: "Open in Temp Container(s)",
   contexts: ["link", "selection", "tab", "bookmark"],
   onclick: async (clickdata, tab) => {
     const openAsActive = !clickdata.modifiers.includes("Ctrl");
