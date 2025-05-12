@@ -1,16 +1,14 @@
 <!doctype html>
 <head>
   <meta charset="utf-8" />
-  <title>Ephemeral Containers - Options</title>
+  <title>Options</title>
   <style>
     body {
       background-color: lightgrey;
       padding: 5px;
       min-height: 640px;
-    }
-    textarea {
-      width: 100%;
-      height: 15vh;
+      font-family: monospace;
+      font-size: 1em;
     }
     fieldset {
       padding: 10px;
@@ -22,127 +20,63 @@
 <body>
   <fieldset>
     <legend>
-      <abbr title="">
-        <b>Additional Functionality</b>
-      </abbr>
+      <b
+        >Toolbar Button action opens a
+        <abbr title="Temporary Container">TC</abbr> with
+      </b>
     </legend>
-    <span
-      ><input type="checkbox" name="permission" value="bookmarks" /> Bookmark
-      context menu
-    </span>
-    <span
-      ><input type="checkbox" name="permission" value="history" /> Automatic
-      history deletion
-    </span>
+
+    <input type="radio" value="reopen" name="toolbarAction" />
+    active Tab URL <i>(default)</i>
+    <br />
+    <input type="radio" value="newtab" name="toolbarAction" />
+    about:newtab
   </fieldset>
 
   <fieldset>
     <legend>
-      <b>Toolbar Action</b>
+      <b>Change TC Color</b>
     </legend>
-
-    <input type="radio" value="reopen" name="toolbarAction" checked /> Open TC
-    with current URL
-    <input type="radio" value="newtab" name="toolbarAction" /> Open TC with
-    'about:newtab'
-  </fieldset>
-
-  <fieldset>
-    <legend>
-      <b>Colors</b>
-    </legend>
-    <span style="background-color: blue; color: white"
-      ><input type="checkbox" name="usecolors" value="blue" checked />blue
-    </span>
 
     <span style="background-color: turquoise"
-      ><input
-        type="checkbox"
-        name="usecolors"
-        value="turquoise"
-        checked
-      />turquoise</span
+      ><input type="radio" name="usecolors" value="turquoise" />
+      turquoise_</span
     >
+    <br />
 
+    <span style="background-color: blue; color: white"
+      ><input type="radio" name="usecolors" value="blue" /> blue______
+    </span>
+
+    <br />
     <span style="background-color: green; color: white"
-      ><input type="checkbox" name="usecolors" value="green" checked />green
+      ><input type="radio" name="usecolors" value="green" /> green_____
     </span>
 
+    <br />
     <span style="background-color: yellow"
-      ><input type="checkbox" name="usecolors" value="yellow" checked />yellow
+      ><input type="radio" name="usecolors" value="yellow" /> yellow____
     </span>
+    <br />
 
     <span style="background-color: orange">
-      <input type="checkbox" name="usecolors" value="orange" checked />orange
+      <input type="radio" name="usecolors" value="orange" /> orange____
     </span>
 
+    <br />
     <span style="background-color: red; color: white">
-      <input type="checkbox" name="usecolors" value="red" checked />red
+      <input type="radio" name="usecolors" value="red" /> red_______
     </span>
 
+    <br />
     <span style="background-color: pink">
-      <input type="checkbox" name="usecolors" value="pink" checked />pink
+      <input type="radio" name="usecolors" value="pink" /> pink______
     </span>
 
+    <br />
     <span style="background-color: purple; color: white">
-      <input type="checkbox" name="usecolors" value="purple" checked />
-      purple</span
+      <input type="radio" name="usecolors" value="purple" /> purple____</span
     >
-  </fieldset>
-
-  <fieldset>
-    <legend>
-      <abbr
-        title="Configure when temp containers should be automatically created/used"
-      >
-        <b>Operation Mode (?):</b>
-      </abbr>
-    </legend>
-
-    <div style="padding-left: 25%; border: 1px solid gray">
-      <input type="radio" value="include" name="listmode" />
-      <abbr
-        title="Only tabs matching any followup expression, will be automatically opened in a temp container"
-      >
-        Explicit (?)
-      </abbr>
-      <input type="radio" value="exclude" name="listmode" />
-      <abbr
-        title="All tabs will be opened in a temp container, execpt those matching any followup expressions"
-      >
-        Implicit (?)
-      </abbr>
-    </div>
-
-    <textarea
-      id="textarea_regexstrs"
-      placeholder="Enter exclusions for the selected mode here.
-Enter regular expressions line by line
-Examples:
-    ^https:\/\/www\.facebook\.com.*
-    ^https:\/\/example\.net.*
-    ^https:\/\/.*\.wikipedia\.org.*
-"
-    ></textarea>
-
-    <!-- button id="regexstrs_save_btn" style="float: right">Save</button-->
-  </fieldset>
-
-  <fieldset>
-    <legend>
-      <abbr title="Tabs with matching URLs will be ignored">
-        <b>Ignore Matches (?)</b></abbr
-      >
-    </legend>
-    <textarea
-      id="textarea_ignoreregexstrs"
-      placeholder="Enter regular expressions line by line here
-Examples:
-    ^https:\/\/www\.facebook\.com.*
-    ^https:\/\/example\.net.*
-    ^https:\/\/.*\.wikipedia\.org.*
-"
-    ></textarea>
   </fieldset>
 
   <script src="options.js"></script>
