@@ -1,0 +1,37 @@
+name: Build and Release XPI
+
+on:
+  # push:
+  #   branches: [main]
+  #   paths:
+  #     - manifest.json
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get version from manifest.json
+        id: version
+        run: |
+          VERSION=$(grep '"version"' manifest.json | cut -d'"' -f4)
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Create XPI
+        run: |
+          mkdir -p dist
+          zip -r "dist/temp-containers-$VERSION.xpi" . -x '*.git*'
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.VERSION }}
+          name: v${{ env.VERSION }}
+          files: dist/*.xpi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
