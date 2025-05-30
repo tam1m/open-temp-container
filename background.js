@@ -1,14 +1,33 @@
 /* global browser */
 
 // cookieStoreIds of all managed containers
+let historyPermissionEnabled = false;
+let intId = null;
+let historyCleanUpQueue = [];
 let containerCleanupTimer = null;
 let toolbarAction = "";
+let histdeldelay = 30000;
 let tcdeldelay = 5000;
 let regexList = null;
 let ignoredRegexList = null;
 let emojis = [];
 let emojisoffset = 0;
-let usecolor = "turquoise";
+
+// array of all allowed container colors
+const allcolors = [
+  "blue",
+  "turquoise",
+  "green",
+  "yellow",
+  "orange",
+  "red",
+  "pink",
+  "purple",
+];
+let usecolors = [];
+const historyPermission = {
+  permissions: ["history"],
+};
 
 function isOnRegexList(url) {
   for (let i = 0; i < regexList.length; i++) {
@@ -28,6 +47,42 @@ function isOnIngoreList(url) {
   return false;
 }
 
+async function buildIgnoreRegexList() {
+  const out = [];
+  (await getFromStorage("string", "textarea_ignoreregexstrs", ""))
+    .split("\n")
+    .forEach((line) => {
+      line = line.trim();
+      if (line !== "") {
+        try {
+          out.push(new RegExp(line));
+        } catch (e) {
+          // todo: show a notification that a regex failed to compile ...
+          console.warn(e);
+        }
+      }
+    });
+  return out;
+}
+
+async function buildRegExList() {
+  const out = [];
+  (await getFromStorage("string", "textarea_regexstrs", ""))
+    .split("\n")
+    .forEach((line) => {
+      line = line.trim();
+      if (line !== "") {
+        try {
+          out.push(new RegExp(line));
+        } catch (e) {
+          // todo: show a notification that a regex failed to compile ...
+          console.warn(e);
+        }
+      }
+    });
+  return out;
+}
+
 async function getFromStorage(type, id, fallback) {
   let tmp = await browser.storage.local.get(id);
   if (typeof tmp[id] === type) {
@@ -44,7 +99,7 @@ async function setToStorage(id, value) {
 }
 
 browser.menus.create({
-  title: "Open Temp Container",
+  title: "Open in Temp Container(s)",
   contexts: ["link", "selection", "tab", "bookmark"],
   onclick: async (clickdata, tab) => {
     const openAsActive = !clickdata.modifiers.includes("Ctrl");
@@ -160,12 +215,12 @@ async function openNewTabInExistingContainer(cookieStoreId) {
   });
 }
 
-function onBAClicked(tab) {
+async function onBAClicked(tab) {
   if (toolbarAction === "newtab") {
     createTempContainerTab();
   } else {
     if (tab.url.startsWith("http")) {
-      createTempContainerTab(tab.url, true);
+      await createTempContainerTab(tab.url, true);
     } else {
       createTempContainerTab();
     }
@@ -173,13 +228,14 @@ function onBAClicked(tab) {
 }
 
 async function createContainer() {
+  const color = usecolors[Math.floor(Math.random() * usecolors.length)];
   const now = "" + Date.now();
   let container = await browser.contextualIdentities.create({
     name:
       "Temp" +
       emojis[emojisoffset++ % (emojis.length - 1)] +
       now.split("").reverse().join(""),
-    color: usecolor,
+    color: color,
     icon: "circle",
   });
   /*await browser.contextualIdentities.update(container.cookieStoreId, {
@@ -190,7 +246,29 @@ async function createContainer() {
 
 async function onStorageChange() {
   toolbarAction = await getFromStorage("string", "toolbarAction", "reopen");
-  usecolor = await getFromStorage("string", "usecolors", "turquoise");
+  usecolors = await getFromStorage("object", "usecolors", allcolors);
+  if (!Array.isArray(usecolors)) {
+    usecolors = allcolors;
+  }
+  if (usecolors.length < 1) {
+    usecolors = allcolors;
+  }
+
+  listmode = await getFromStorage("string", "listmode", "include");
+  regexList = await buildRegExList();
+  ignoredRegexList = await buildIgnoreRegexList();
+  historyCleanUpQueue = await getFromStorage(
+    "object",
+    "historyCleanUpQueue",
+    [],
+  );
+}
+
+// show the user the options page on first installation
+async function onInstall(details) {
+  if (details.reason === "install") {
+    browser.runtime.openOptionsPage();
+  }
 }
 
 async function onCommand(command) {
@@ -213,9 +291,116 @@ async function onCommand(command) {
   }
 }
 
+async function onBeforeNavigate(details) {
+  // ignore everything not http/s, like about: and moz-extensions
+  if (!details.url.startsWith("http")) {
+    return;
+  }
+
+  const isIgnored = isOnIngoreList(details.url);
+
+  if (isIgnored) {
+    return;
+  }
+
+  let tabInfo;
+  try {
+    tabInfo = await browser.tabs.get(details.tabId);
+  } catch (e) {
+    console.error(e);
+    return;
+  }
+
+  const [inContainer, inTempContainer] = await (async (cs) => {
+    try {
+      const container = await browser.contextualIdentities.get(cs);
+      return [true, container.name.startsWith("Temp")];
+    } catch (e) {
+      return [false, false];
+    }
+  })(tabInfo.cookieStoreId);
+
+  if (!inContainer) {
+    // not in a container
+    const _isOnList = isOnRegexList(details.url);
+    if (
+      (listmode === "exclude" && !_isOnList) ||
+      (listmode === "include" && _isOnList)
+    ) {
+      await createTempContainerTab(details.url, tabInfo.active);
+      browser.tabs.remove(tabInfo.id);
+      return { cancel: true }; // prevent history from being created?
+    }
+  } else {
+    // in a container
+    if (inTempContainer) {
+      if (!historyPermissionEnabled) {
+        return;
+      }
+      if (historyCleanUpQueue.includes(details.url)) {
+        return;
+      }
+      historyCleanUpQueue.push(details.url);
+      setToStorage("historyCleanUpQueue", historyCleanUpQueue);
+    }
+  }
+}
+
+function cleanupHistory() {
+  const len = historyCleanUpQueue.length;
+  const its = len > 1 ? len / 2 : 1;
+  for (let i = 0; i < its; i++) {
+    try {
+      browser.history.deleteUrl({
+        url: historyCleanUpQueue.shift(),
+      });
+    } catch (e) {
+      //noop
+      console.warn(e);
+    }
+  }
+  setToStorage("historyCleanUpQueue", historyCleanUpQueue);
+}
+
+async function handlePermissionChange() {
+  historyPermissionEnabled =
+    await browser.permissions.contains(historyPermission);
+  clearInterval(intId);
+  if (historyPermissionEnabled) {
+    intId = setInterval(cleanupHistory, histdeldelay);
+  }
+}
+
+async function onTabsUpdated(tabId, changeInfo, tabInfo) {
+  if (typeof changeInfo.url === "string" && changeInfo.url.startsWith("http")) {
+    const inTempContainer = await (async (cs) => {
+      try {
+        const container = await browser.contextualIdentities.get(cs);
+        return container.name.startsWith("Temp");
+      } catch (e) {
+        return false;
+      }
+    })(tabInfo.cookieStoreId);
+
+    if (inTempContainer) {
+      if (!historyPermissionEnabled) {
+        return;
+      }
+      if (historyCleanUpQueue.includes(changeInfo.url)) {
+        return;
+      }
+      historyCleanUpQueue.push(changeInfo.url);
+      setToStorage("historyCleanUpQueue", historyCleanUpQueue);
+    }
+  }
+}
+
 (async () => {
+  browser.runtime.onInstalled.addListener(onInstall); // needs to be first
+
   // init vars
   await onStorageChange();
+  await handlePermissionChange();
 
   let tmp = await fetch("emojis.json");
   emojis = await tmp.json();
@@ -231,6 +416,14 @@ async function onCommand(command) {
   // register listeners
   browser.browserAction.onClicked.addListener(onBAClicked);
   browser.commands.onCommand.addListener(onCommand);
+  browser.permissions.onAdded.addListener(handlePermissionChange);
+  browser.permissions.onRemoved.addListener(handlePermissionChange);
   browser.storage.onChanged.addListener(onStorageChange);
   browser.tabs.onRemoved.addListener(onTabRemoved);
+  browser.webRequest.onBeforeRequest.addListener(
+    onBeforeNavigate,
+    { urls: ["<all_urls>"], types: ["main_frame"] },
+    ["blocking"],
+  );
+  browser.tabs.onUpdated.addListener(onTabsUpdated, { properties: ["url"] });
 })();
