@@ -72,18 +72,9 @@ jobs:
           UPDATE_LINK="https://github.com/tam1m/open-temp-containers-plus/releases/download/$RELEASE_NAME/$XPI_NAME"
           jq --arg v "$VERSION" \
              --arg url "$UPDATE_LINK" \
-             '
-             to_entries
-             | map(
-                 if .key == env.EXT_ID
-                 then
-                   .value.updates[0].version = $v
-                   | .value.updates[0].update_link = $url
-                 else .
-                 end
-               )
-             | from_entries
-             ' update.json > update.tmp && mv update.tmp update.json
+             --arg id "$EXT_ID" \
+             '.addons[$id].updates[0].version = $v | .addons[$id].updates[0].update_link = $url' \
+             update.json > update.tmp && mv update.tmp update.json
 
       - name: Commit and push update.json
         run: |
