@@ -53,7 +53,7 @@ jobs:
 
       - name: Sign extension
         run: |
-          web-ext sign --api-key "${{ secrets.AMO_ISSUER }}" --api-secret "$${{ secrets.AMO_SECRET }}" --source-dir $SRC_DIR --artifacts-dir $ARTIFACTS_DIR --channel unlisted
+          web-ext sign --api-key "${{ secrets.AMO_ISSUER }}" --api-secret "${{ secrets.AMO_SECRET }}" --source-dir $SRC_DIR --artifacts-dir $ARTIFACTS_DIR --channel unlisted
 
       - name: Find signed XPI
         id: find_xpi
