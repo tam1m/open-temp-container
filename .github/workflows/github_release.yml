@@ -44,7 +44,7 @@ jobs:
           fi
 
       - name: Lint extension
-        run: web-ext lint --source-dir $SRC_DIR
+        run: web-ext lint --source-dir $SRC_DIR --self-hosted
 
       - name: Build extension
         run: |
