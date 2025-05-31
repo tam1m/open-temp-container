@@ -46,32 +46,44 @@ jobs:
       - name: Lint extension
         run: web-ext lint --source-dir $SRC_DIR --self-hosted
 
-      - name: Build extension
-        run: |
-          rm -f $ARTIFACTS_DIR/*.{zip,xpi}
-          web-ext build --source-dir $SRC_DIR --artifacts-dir $ARTIFACTS_DIR
-
       - name: Sign extension
         run: |
-          web-ext sign --api-key "${{ secrets.AMO_ISSUER }}" --api-secret "${{ secrets.AMO_SECRET }}" --source-dir $SRC_DIR --artifacts-dir $ARTIFACTS_DIR --channel unlisted
+          rm -rf $ARTIFACTS_DIR
+          web-ext sign \
+            --api-key "${{ secrets.AMO_ISSUER }}" \
+            --api-secret "${{ secrets.AMO_SECRET }}" \
+            --source-dir $SRC_DIR \
+            --artifacts-dir $ARTIFACTS_DIR \
+            --channel unlisted
 
-      - name: Find signed XPI
-        id: find_xpi
+      - name: Find and rename signed XPI
         run: |
           XPI_NAME="temp-containers-plus-$VERSION.xpi"
-          SIGNED_XPI=$(find $ARTIFACTS_DIR -name "*.xpi" | head -n 1)
+          SIGNED_XPI=$(ls $ARTIFACTS_DIR/*.xpi)
           if [ ! -f "$SIGNED_XPI" ]; then
             echo "Signed XPI not found!"; exit 1;
           fi
-          cp "$SIGNED_XPI" "$XPI_NAME"
+          mv "$SIGNED_XPI" "$XPI_NAME"
           echo "XPI_NAME=$XPI_NAME" >> $GITHUB_ENV
-          echo "SIGNED_XPI=$XPI_NAME" >> $GITHUB_OUTPUT
 
       - name: Update update.json
         run: |
           RELEASE_NAME="v$VERSION"
           UPDATE_LINK="https://github.com/tam1m/open-temp-containers-plus/releases/download/$RELEASE_NAME/$XPI_NAME"
-          jq --arg v "$VERSION" --arg url "$UPDATE_LINK" 'to_entries | map(if .key == env.EXT_ID then .value.updates[0].version = $v | .value.updates[0].update_link = $url | . end) | from_entries' update.json > update.tmp && mv update.tmp update.json
+          jq --arg v "$VERSION" \
+             --arg url "$UPDATE_LINK" \
+             '
+             to_entries
+             | map(
+                 if .key == env.EXT_ID
+                 then
+                   .value.updates[0].version = $v
+                   | .value.updates[0].update_link = $url
+                 else .
+                 end
+               )
+             | from_entries
+             ' update.json > update.tmp && mv update.tmp update.json
 
       - name: Commit and push update.json
         run: |
