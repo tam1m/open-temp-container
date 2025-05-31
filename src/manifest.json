@@ -2,7 +2,7 @@
   "browser_specific_settings": {
     "gecko": {
       "id": "{04d230ce-13df-4a51-a0ee-29789b5753e6}",
-      "update_url": "https://tam1m.github.io/open-temp-container/update.json"
+      "update_url": "https://raw.githubusercontent.com/tam1m/open-temp-container/refs/heads/main/update.json"
     }
   },
   "author": "tam1m",
