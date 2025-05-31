@@ -1,10 +1,12 @@
 {
-  "{04d230ce-13df-4a51-a0ee-29789b5753e6}": {
-    "updates": [
-      {
-        "version": "1.3.3",
-        "update_link": "https://github.com/tam1m/open-temp-containers-plus/releases/download/v1.3.3/temp-containers-plus-1.3.3.xpi"
-      }
-    ]
+  "addons": {
+    "{04d230ce-13df-4a51-a0ee-29789b5753e6}": {
+      "updates": [
+        {
+          "version": "1.3.3",
+          "update_link": "https://github.com/tam1m/open-temp-containers-plus/releases/download/v1.3.1/temp-containers-plus-1.3.3.xpi"
+        }
+      ]
+    }
   }
 }
