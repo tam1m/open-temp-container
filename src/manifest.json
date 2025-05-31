@@ -2,11 +2,11 @@
   "browser_specific_settings": {
     "gecko": {
       "id": "{04d230ce-13df-4a51-a0ee-29789b5753e6}",
-      "update_url": "https://raw.githubusercontent.com/tam1m/open-temp-container/refs/heads/main/update.json"
+      "update_url": "https://raw.githubusercontent.com/tam1m/open-temp-containers-plus/refs/heads/main/update.json"
     }
   },
   "author": "tam1m",
-  "homepage_url": "https://github.com/tam1m/open-temp-containers",
+  "homepage_url": "https://github.com/tam1m/open-temp-containers-plus",
   "background": { "scripts": ["background.js"] },
   "browser_action": {
     "default_area": "navbar",
